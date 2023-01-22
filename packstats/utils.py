@@ -22,10 +22,29 @@ class Config(object):
     @classmethod
     def _get_config(cls):
         # Read the configuration file from the config directory
-        with open("./config/packstat_defaults.json", "r") as f:
-            config = json.load(f)
-        return config
+        try:
+            with open("./config/packstat_defaults.json", "r") as f:
+                config = json.load(f)
+            return config
+        except Exception as e:
+            print("An error occurred while trying to load the configuration file! ", e)
+            print("Using default configuration values instead and saving them in a ./config/packstat_defaults.json file.")
 
+            # Save the default configuration values in a file
+            os.makedirs("./config", exist_ok=True)
+            with open("./config/packstat_defaults.json", "w") as f:
+                json.dump(cls._get_default_config(), f, indent=4)
+            return cls._get_default_config()
+        
+    @classmethod
+    def _get_default_config(cls):
+        return {
+                "DEFAULT_MIRROR_URL": "http://ftp.uk.debian.org/debian/dists/stable/main/",
+                "DEFAULT_TOP_N": 10,
+                "DEFAULT_REFRESH": False,
+                "DEFAULT_ARCH": "all",
+                "DEFAULT_DATA_DIR_PATH": "./data/"
+                }
 
 # Load the configuration file
 config = Config.instance()
