@@ -1,7 +1,8 @@
 from packstats import PackageStatistics
 import argparse
 
-if __name__ == "__main__":
+
+def run_cli():
     parser = argparse.ArgumentParser()
     parser.add_argument("arch", type=str, default=PackageStatistics.DEFAULT_ARCH, help="The architecture for which to retrieve the package statistics")
     parser.add_argument("-m", "--mirror", type=str, default=PackageStatistics.DEFAULT_MIRROR_URL, help="The Debian mirror to use")
@@ -10,3 +11,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     package_stats = PackageStatistics(arch=args.arch, mirror_url=args.mirror, top_n=args.top, refresh=args.refresh)
     package_stats.run()
+
+if __name__ == "__main__":
+    run_cli()
