@@ -1,131 +1,114 @@
 import sys
 import os
 import gzip
-import collections
 import json
-import urllib.request
-import argparse
-import time
 import shutil
-
-DEFAULT_MIRROR_URL = "http://ftp.uk.debian.org/debian/dists/stable/main/"
-DEFAULT_TOP_N = 10
-DEFAULT_REFRESH = False
-DEFAULT_ARCH = "all"
-DEFAULT_CONTENTS_DIR_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))+ "/Contents/"
+import time
+from typing import List
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 class PackageStatistics:
-    def __init__(self, arch=DEFAULT_ARCH,mirror_url=DEFAULT_MIRROR_URL,top_n=DEFAULT_TOP_N,refresh=DEFAULT_REFRESH):
-        # Assign the values to the class variables
+    DEFAULT_MIRROR_URL = "http://ftp.uk.debian.org/debian/dists/stable/main/"
+    DEFAULT_TOP_N = 10
+    DEFAULT_REFRESH = False
+    DEFAULT_ARCH = "all"
+    DEFAULT_DATA_DIR_PATH = os.getcwd() + "/data/"
+
+    def __init__(self, arch: str = DEFAULT_ARCH, mirror_url: str = DEFAULT_MIRROR_URL, top_n: int = DEFAULT_TOP_N, refresh: bool = DEFAULT_REFRESH):
         self.arch = arch
         self.mirror_url = mirror_url
         self.top_packs_count = top_n
         self.refresh = refresh
         
+        # Extract the mirror domain as differnt mirriors can support different architectures
+        self.mirror_domain = urlparse(self.mirror_url).netloc
+
         # Validate architecture and mirror urls
         self.validate_arch()
         self.validate_mirror_url()
 
-        # Create the contents directory with arch subdirectory if it doesn't exist
-        os.makedirs(DEFAULT_CONTENTS_DIR_PATH +self.arch, exist_ok=True)
-
-        # If the refresh flag is set then delete and update the contents directory and archs.txt file
-        if self.refresh:
-            self.refresh_arch_data()
-            self.refresh_arch_types()
-
-    def refresh_arch_data(self):
-        # Delete the contents directory for the given architecture and archs.txt file
-        os.remove(DEFAULT_CONTENTS_DIR_PATH + self.arch + "/packages-stats.json")
-        os.remove(DEFAULT_CONTENTS_DIR_PATH + self.arch + "Contents.gz")
-
-    def refresh_arch_types(self):
-        # Delete the archs.txt file
-        os.remove(DEFAULT_CONTENTS_DIR_PATH + "/archs.txt")
-
     def validate_arch(self):
-        if os.path.exists(DEFAULT_CONTENTS_DIR_PATH + "/archs.txt"):
-            with open(DEFAULT_CONTENTS_DIR_PATH + "/archs.txt", "r") as f:
+        # Check if the given architecture is available on the mirror
+
+        # If the available architectures file exists and is not older than 1 day, use it
+        if os.path.exists(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt") and not self.is_available_arch_older_than(self.arch, 1):
+            with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt", "r") as f:
                 archs = f.read().splitlines()
                 if self.arch not in archs:
-                    print("The given architecture is not available on the Debian Mirror")
+                    print("The given architecture is not available on this Debian Mirror")
                     sys.exit(1)
                 else:
                     return self.arch
         else:
-                # Create the archs.txt file if it doesn't exist
-                os.makedirs(DEFAULT_CONTENTS_DIR_PATH, exist_ok=True)
-                archs = self.create_arch_file(self.mirror_url)
-                if self.arch not in archs:
-                    print("The given architecture is not available on the Debian Mirror")
-                    sys.exit(1)
-                else:
-                    return self.arch
-
-    def create_arch_file(self,mirror_url=DEFAULT_MIRROR_URL):
-        # Create the archs.txt file if it doesn't exist
-        os.makedirs(DEFAULT_CONTENTS_DIR_PATH, exist_ok=True)
+            # If the available architectures file doesn't exist or is older than 1 day, create it or update it
+            os.makedirs(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}", exist_ok=True)
+            archs = self.create_arch_file(self.mirror_url)
+            if self.arch not in archs:
+                print("The given architecture is not available on the Debian Mirror")
+                sys.exit(1)
+            else:
+                return self.arch
+            
+    def create_arch_file(self, mirror_url: str = DEFAULT_MIRROR_URL) -> List[str]:
         try:
-            with urllib.request.urlopen(mirror_url) as response:
+            with urlopen(mirror_url) as response:
                 raw_html = response.read()
                 html = raw_html.decode("utf-8")
 
             # Find the available architectures
             archs = html.split("Contents-")[1:]
             valid_archs = [arch.split(".gz")[0] for arch in archs]
-            
+
             # Save the available architectures in a file
-            with open(DEFAULT_CONTENTS_DIR_PATH + "/archs.txt", "w+") as f:
-                for arch in list(set(valid_archs)):
+            with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt", "w") as f:
+                for arch in valid_archs:
                     f.write(arch + "\n")
             return valid_archs
-        except urllib.error.URLError as e:
-            print("Network error: " + str(e.reason))
-            print("Unable to download the Contents file from the Debian FTP server")
+        except Exception as e:
+            print("An error occurred while trying to retrieve the available architectures: ", e)
             sys.exit(1)
+
+    def is_available_arch_older_than(self, arch: str, days: int) -> bool:
+        # Check if the available architectures file is older than the given number of days
+        arch_file_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt"
+        if os.path.exists(arch_file_path):
+            arch_file_mod_time = os.path.getmtime(arch_file_path)
+            if arch_file_mod_time < (time.time() - (days * 24 * 60 * 60)):
+                return True
+            else:
+                return False
+        else:
+            return True
 
     def validate_mirror_url(self):
         try:
-            mirror_status = urllib.request.urlopen(self.mirror_url).getcode()
-            if mirror_status == 200:
-                print("Mirror URL is up")
-                return True
-            else:
-                print("Mirror URL is down! Please try a differnt mirror URL")
-                return False
-        except urllib.error.URLError as e:
-            print("Network error: " + str(e.reason))
-            print("Unable to download the Contents file from the Debian FTP server")
+            with urlopen(self.mirror_url) as response:
+                response.read()
+        except Exception as e:
+            print("The mirror URL is not valid or isn't working: ", e)
             sys.exit(1)
 
-    def get_content_url(self, arch,mirror_url):
-        return mirror_url + "Contents-" + arch + ".gz"
-    
-    def download_contents_file(self, arch,mirror_url):
-        # Download the Contents file and save it with arch as the name in the contents directory
+    def download_contents_file(self):
+        contents_url = self.mirror_url + f"Contents-{self.arch}.gz"
+        contents_file_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/"
+        
+        if not os.path.exists(contents_file_path):
+            os.makedirs(contents_file_path, exist_ok=True)
+        contents_file_name = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/" + "/Contents.gz"
+        
         try:
-            print("Downloading Contents file for architecture " + arch + "...")
-            urllib.request.urlretrieve(self.get_content_url(arch,mirror_url), DEFAULT_CONTENTS_DIR_PATH + f"{arch}/Contents.gz")
-            print("Contents file downloaded")
-            return DEFAULT_CONTENTS_DIR_PATH + f"{arch}/Contents.gz"
-        except urllib.error.URLError as e:
-            print("Network error: " + str(e.reason))
-            print("Unable to download the Contents file from the Debian FTP server")
+            with urlopen(contents_url) as response, open(contents_file_name, "wb") as out_file:
+                shutil.copyfileobj(response, out_file)
+        except Exception as e:
+            print("An error occurred while trying to download the Contents file: ", e)
             sys.exit(1)
 
-    def get_contents_file(self):
-        # Check if the Contents file is already downloaded then return the path
-        if os.path.exists(DEFAULT_CONTENTS_DIR_PATH+f"{self.arch}/Contents.gz"):
-            print("Contents file already downloaded")
-            return DEFAULT_CONTENTS_DIR_PATH + f"{self.arch}/Contents.gz"
-        else:
-            # Download the Contents file and save it with arch as the name in the contents directory
-            return self.download_contents_file(self.arch,self.mirror_url)
-               
-    def parse_contents_file(self, path):
+    def parse_contents_file(self):
+        contents_file_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/" + "/Contents.gz"
         # Parse the Contents file and return a dictionary with the package name as the key and the number of files associated with the package as the value
         package_dict = {}
-        with gzip.open(path, 'rb') as buffer:
+        with gzip.open(contents_file_path, 'rb') as buffer:
             for line in buffer:
                 line = line.decode("utf-8").strip()
                 # Skip empty lines
@@ -141,69 +124,25 @@ class PackageStatistics:
                             package_dict[package] = 1
                         else:
                             package_dict[package] = package_dict[package] + 1
-        return package_dict
-    
-    def sort_packages_dict(self, packages):
-        # Sort the dictionary by the number of files associated with each package in descending order
-        packages = collections.OrderedDict(sorted(packages.items(), key=lambda x: x[1], reverse=True))
-        return packages
-    
-    def save_sorted_packages_dict_to_json(self,arch,packages):
-        # Save the sorted dictionary to a json file
-        with open(DEFAULT_CONTENTS_DIR_PATH + f"{arch}/packages-stats.json", "w+") as f:
-            f.write(json.dumps(packages))
-        
-    def get_sorted_packages_dict_from_json(self,arch):
-        # Get the sorted dictionary from a json file
-        print(DEFAULT_CONTENTS_DIR_PATH + f"{arch}/package-stats.json")
-        with open(DEFAULT_CONTENTS_DIR_PATH + f"{arch}/packages-stats.json", "r") as f:
-            packages = json.loads(f.read())
-        return packages
-    
-    def delete_arch_dir(self,arch):
-        # Delete the directory for a given architecture
-        shutil.rmtree(DEFAULT_CONTENTS_DIR_PATH + f"{arch}")
+        # Save the dictionary to a json file
+        with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/" +  "/packages-stats.json", "w") as f:
+            json.dump(package_dict, f)
 
-    def delete_arch_file(self):
-        # Delete the file containing the available architectures
-        os.remove(DEFAULT_CONTENTS_DIR_PATH + "/archs.txt")
+    def get_top_packages(self):
+        try:
+            with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}" +  "/packages-stats.json", "r") as f:
+                package_stats = json.load(f)
+            top_packages = dict(sorted(package_stats.items(), key=lambda item: item[1], reverse=True)[:self.top_packs_count])
+            return top_packages
+        except Exception as e:
+            print("An error occurred while trying to retrieve the top packages: ", e)
+            sys.exit(1)
 
-    def gen_new_packstat(self,arch):
-        # Generate new package statistics for a given architecture
-        contents_file_path = self.get_contents_file()
-        packages = self.parse_contents_file(contents_file_path)
-        packages = self.sort_packages_dict(packages)
-        self.save_sorted_packages_dict_to_json(arch,packages)
-        return packages
-
-    def print_top_n_packages(self, n=DEFAULT_TOP_N):
-        if os.path.exists(DEFAULT_CONTENTS_DIR_PATH+f"{self.arch}/packages-stats.json"):
-            # If the json file exists then check if it was updated in the last 24 hours
-            last_modified = os.path.getmtime(DEFAULT_CONTENTS_DIR_PATH+f"{self.arch}/packages-stats.json")
-            if time.time() - last_modified < 86400:
-                # If it was updated in the last 24 hours then just print the top n packages
-                packages = self.get_sorted_packages_dict_from_json(self.arch)
-                self.print_top_packages(packages)
-                return
-            else:
-                # If it was not updated in the last 24 hours then refresh the file
-                self.delete_arch_dir(self.arch)
-                self.delete_arch_file(self)
-                packages = self.gen_new_packstat(self.arch)
-        else:
-             packages = self.gen_new_packstat(self.arch)
-        
-        self.print_top_packages(packages,n)
-
-    def print_top_packages(self,packages,n=DEFAULT_TOP_N):
-        print(f"\t\tTop {n} packages:\n")
-        print("\t\tNumber\tPackage\tNumber of files")
-        for package in list(packages.keys())[:n]:
-            # Print in the format number package_name number_of_files
-            print(f"\t\t{list(packages.keys()).index(package)+1}\t{package}\t{packages[package]}")
-
-
-# Main function
-def main_cli(arch=DEFAULT_ARCH, mirror_url=DEFAULT_MIRROR_URL, n=DEFAULT_TOP_N, refresh=DEFAULT_REFRESH):
-    top_n_packages = PackageStatistics(arch, mirror_url, n, refresh)
-    top_n_packages.print_top_n_packages(n)
+    def run(self):
+        if not os.path.exists(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/packages-stats.json") or self.refresh:
+            self.download_contents_file()
+            self.parse_contents_file()
+        top_packages = self.get_top_packages()
+        print("Top packages by number of files:")
+        for i, (package, files) in enumerate(top_packages.items(), start=1):
+            print(f"{i}. {package} - {files} files")
