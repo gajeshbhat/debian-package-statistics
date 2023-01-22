@@ -28,6 +28,7 @@ class ArchUtils:
     def __init__(self, mirror_url: str):
         self.mirror_url = mirror_url
         self.mirror_domain = self.get_mirror_domain()
+        self.arch_file_path = ArchUtils.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/" + "/available_archs.txt"
     
     def get_mirror_domain(self) -> str:
         return urlparse(self.mirror_url).netloc
@@ -37,8 +38,8 @@ class ArchUtils:
         Check if the given architecture is available on the mirror
         """
         # If the available architectures file exists and is not older than 1 day, use it
-        if os.path.exists(ArchUtils.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt") and not self.is_available_arch_older_than(1):
-            with open(ArchUtils.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt", "r") as f:
+        if os.path.exists(self.arch_file_path) and not self.is_available_arch_older_than(1):
+            with open(self.arch_file_path, "r") as f:
                 archs = f.read().splitlines()
                 if arch not in archs:
                     print("The given architecture is not available on this Debian Mirror")
@@ -62,7 +63,7 @@ class ArchUtils:
             valid_archs = [arch.split(".gz")[0] for arch in archs]
 
             # Save the available architectures in a file
-            with open(ArchUtils.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt", "w") as f:
+            with open(self.arch_file_path, "w") as f:
                 # Remove duplicates
                 for arch in list(set(valid_archs)):  
                     f.write(arch + "\n")
@@ -73,7 +74,7 @@ class ArchUtils:
     
     def is_available_arch_older_than(self, days: int) -> bool:
         # Check if the available architectures file is older than the given number of days
-        arch_file_path = ArchUtils.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt"
+        arch_file_path = self.arch_file_path
         if os.path.exists(arch_file_path):
             arch_file_mod_time = os.path.getmtime(arch_file_path)
             if arch_file_mod_time < (time.time() - (days * 24 * 60 * 60)):

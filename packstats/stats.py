@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 from .utils import ArchUtils,get_config
 
+# TODO: Use singleton pattern
 configs = get_config()
 
 class PackageStatistics:
@@ -30,6 +31,13 @@ class PackageStatistics:
         # Validate architecture
         ArchUtils(self.mirror_url).validate_arch(self.arch)
 
+        # Files paths
+        self.contents_dir_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/"
+        self.contents_file_path = self.contents_dir_path + "/Contents.gz"
+        self.stats_file_path = self.contents_dir_path + "/packages_stats.json"
+        print(self.contents_dir_path, self.contents_file_path, self.stats_file_path)
+
+
     def get_mirror_domain(self) -> str:
         return urlparse(self.mirror_url).netloc
     
@@ -48,24 +56,23 @@ class PackageStatistics:
 
     def download_contents_file(self):
         contents_url = self.mirror_url + f"Contents-{self.arch}.gz"
-        contents_file_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/"
         
-        if not os.path.exists(contents_file_path):
-            os.makedirs(contents_file_path, exist_ok=True)
-        contents_file_name = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/" + "/Contents.gz"
+        contents_dir_path = self.contents_dir_path
+        if not os.path.exists(contents_dir_path):
+            os.makedirs(contents_dir_path, exist_ok=True)
         
+        contents_file_path = self.contents_file_path
         try:
-            with urlopen(contents_url) as response, open(contents_file_name, "wb") as out_file:
+            with urlopen(contents_url) as response, open(contents_file_path, "wb") as out_file:
                 shutil.copyfileobj(response, out_file)
         except Exception as e:
             print("An error occurred while trying to download the Contents file: ", e)
             sys.exit(1)
 
     def parse_contents_file(self):
-        contents_file_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/" + "/Contents.gz"
         # Parse the Contents file and return a dictionary with the package name as the key and the number of files associated with the package as the value
         package_dict = {}
-        with gzip.open(contents_file_path, 'rb') as buffer:
+        with gzip.open(self.contents_file_path, 'rb') as buffer:
             for line in buffer:
                 line = line.decode("utf-8").strip()
                 if line == "":
@@ -81,21 +88,27 @@ class PackageStatistics:
                         else:
                             package_dict[package] = package_dict[package] + 1
         # Save the dictionary to a json file
-        with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/" +  "/packages-stats.json", "w") as f:
+        with open(self.stats_file_path, "w+") as f:
             json.dump(package_dict, f)
 
     def get_top_packages(self):
         try:
-            with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}" +  "/packages-stats.json", "r") as f:
+            with open(self.stats_file_path, "r") as f:
                 package_stats = json.load(f)
+            
+            if package_stats is None or package_stats == {}:
+                print("The package statistics file is empty")
+                sys.exit(1)
+            
             top_packages = dict(sorted(package_stats.items(), key=lambda item: item[1], reverse=True)[:self.top_packs_count])
             return top_packages
+        
         except Exception as e:
             print("An error occurred while trying to retrieve the top packages: ", e)
             sys.exit(1)
 
     def run(self):
-        if not os.path.exists(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/packages-stats.json") or self.refresh:
+        if not os.path.exists(self.stats_file_path) or self.refresh:
             self.download_contents_file()
             self.parse_contents_file()
         top_packages = self.get_top_packages()
