@@ -62,7 +62,8 @@ class PackageStatistics:
 
             # Save the available architectures in a file
             with open(PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/available-archs.txt", "w") as f:
-                for arch in valid_archs:
+                # Remove duplicates
+                for arch in list(set(valid_archs)):  
                     f.write(arch + "\n")
             return valid_archs
         except Exception as e:
