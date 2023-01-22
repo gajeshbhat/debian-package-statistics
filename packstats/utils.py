@@ -6,24 +6,34 @@ from urllib.request import urlopen
 import time
 import json
 
-# Load the configuration file
-def get_config() -> dict:
-    """
-    Get the configuration from the config.json file
-    """
-    try:
+# Singleton class to load the configuration file    
+class Config(object):
+    _instance = None
+
+    def __init__(self):
+        raise RuntimeError('Call instance() instead')
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls._get_config()
+        return cls._instance
+    
+    @classmethod
+    def _get_config(cls):
+        # Read the configuration file from the config directory
         with open("./config/packstat_defaults.json", "r") as f:
             config = json.load(f)
         return config
-    except Exception as e:
-        print("An error occurred while trying to read the configuration file: ", e)
-        sys.exit(1)
+
+
+# Load the configuration file
+config = Config.instance()
 
 # Check if the available architectures file and if its older than the given number of days
 class ArchUtils:
-    configs = get_config()
-    DEFAULT_DATA_DIR_PATH = configs["DEFAULT_DATA_DIR_PATH"]
-    DEFAULT_MIRROR_URL = configs["DEFAULT_MIRROR_URL"]
+    DEFAULT_DATA_DIR_PATH = config["DEFAULT_DATA_DIR_PATH"]
+    DEFAULT_MIRROR_URL = config["DEFAULT_MIRROR_URL"]
 
     def __init__(self, mirror_url: str):
         self.mirror_url = mirror_url
@@ -83,3 +93,5 @@ class ArchUtils:
                 return False
         else:
             return True
+        
+

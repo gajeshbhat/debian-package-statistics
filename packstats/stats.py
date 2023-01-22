@@ -6,14 +6,13 @@ import shutil
 from typing import List
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from .utils import ArchUtils,get_config
+from .utils import ArchUtils,Config
 
-# TODO: Use singleton pattern
-configs = get_config()
+config = Config.instance()
 
 class PackageStatistics:
     
-    DEFAULT_DATA_DIR_PATH = configs["DEFAULT_DATA_DIR_PATH"]
+    DEFAULT_DATA_DIR_PATH = config["DEFAULT_DATA_DIR_PATH"]
 
     def __init__(self, arch: str, mirror_url: str, top_n: int, refresh: bool):
         self.arch = arch
