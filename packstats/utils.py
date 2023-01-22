@@ -4,10 +4,26 @@ from typing import List
 from urllib.parse import urlparse
 from urllib.request import urlopen
 import time
+import json
 
+# Load the configuration file
+def get_config() -> dict:
+    """
+    Get the configuration from the config.json file
+    """
+    try:
+        with open("./config/packstat_defaults.json", "r") as f:
+            config = json.load(f)
+        return config
+    except Exception as e:
+        print("An error occurred while trying to read the configuration file: ", e)
+        sys.exit(1)
+
+# Check if the available architectures file and if its older than the given number of days
 class ArchUtils:
-    DEFAULT_DATA_DIR_PATH = os.getcwd() + "/data/"
-    DEFAULT_MIRROR_URL = "http://ftp.uk.debian.org/debian/dists/stable/main/"
+    configs = get_config()
+    DEFAULT_DATA_DIR_PATH = configs["DEFAULT_DATA_DIR_PATH"]
+    DEFAULT_MIRROR_URL = configs["DEFAULT_MIRROR_URL"]
 
     def __init__(self, mirror_url: str):
         self.mirror_url = mirror_url
@@ -26,7 +42,7 @@ class ArchUtils:
                 archs = f.read().splitlines()
                 if arch not in archs:
                     print("The given architecture is not available on this Debian Mirror")
-                    return False
+                    sys.exit(1)
                 else:
                     return True
         else:

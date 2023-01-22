@@ -1,0 +1,7 @@
+{
+    "DEFAULT_MIRROR_URL": "http://ftp.uk.debian.org/debian/dists/stable/main/",
+    "DEFAULT_TOP_N": 10,
+    "DEFAULT_REFRESH": false,
+    "DEFAULT_ARCH": "all",
+    "DEFAULT_DATA_DIR_PATH": "./data/"
+}

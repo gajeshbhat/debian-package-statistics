@@ -6,16 +6,15 @@ import shutil
 from typing import List
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from .utils import ArchUtils
+from .utils import ArchUtils,get_config
+
+configs = get_config()
 
 class PackageStatistics:
-    DEFAULT_MIRROR_URL = "http://ftp.uk.debian.org/debian/dists/stable/main/"
-    DEFAULT_TOP_N = 10
-    DEFAULT_REFRESH = False
-    DEFAULT_ARCH = "all"
-    DEFAULT_DATA_DIR_PATH = os.getcwd() + "/data/"
+    
+    DEFAULT_DATA_DIR_PATH = configs["DEFAULT_DATA_DIR_PATH"]
 
-    def __init__(self, arch: str = DEFAULT_ARCH, mirror_url: str = DEFAULT_MIRROR_URL, top_n: int = DEFAULT_TOP_N, refresh: bool = DEFAULT_REFRESH):
+    def __init__(self, arch: str, mirror_url: str, top_n: int, refresh: bool):
         self.arch = arch
         self.mirror_url = mirror_url
         self.top_packs_count = top_n
