@@ -35,7 +35,6 @@ class PackageStatistics:
         self.contents_dir_path = PackageStatistics.DEFAULT_DATA_DIR_PATH + f"{self.mirror_domain}/{self.arch}/"
         self.contents_file_path = self.contents_dir_path + "/Contents.gz"
         self.stats_file_path = self.contents_dir_path + "/packages_stats.json"
-        print(self.contents_dir_path, self.contents_file_path, self.stats_file_path)
 
 
     def get_mirror_domain(self) -> str:
@@ -97,7 +96,7 @@ class PackageStatistics:
                 package_stats = json.load(f)
             
             if package_stats is None or package_stats == {}:
-                print("The package statistics file is empty")
+                print("The package statistics file is empty! No Stats to show!")
                 sys.exit(1)
             
             top_packages = dict(sorted(package_stats.items(), key=lambda item: item[1], reverse=True)[:self.top_packs_count])
