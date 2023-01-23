@@ -3,5 +3,6 @@
     "DEFAULT_TOP_N": 10,
     "DEFAULT_REFRESH": false,
     "DEFAULT_ARCH": "all",
-    "DEFAULT_DATA_DIR_PATH": "./data/"
+    "DEFAULT_DATA_DIR_PATH": "./data/",
+    "DEFAULT_LOG_DIR_PATH": "./logs/"
 }
