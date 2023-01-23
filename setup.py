@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="gajeshbhat",
+    name="package_statistics",
     version="0.1",
     author="Gajesh Bhat",
     author_email="gajeshbht@gmail.com",
@@ -20,7 +20,7 @@ setuptools.setup(
     python_requires=">=3.6",
     entry_points={
         "console_scripts": [
-            "packstats=packstats.package_statistics:run_cli",
+            "package_statistics=package_statistics:run_cli",
         ],
     },
 )

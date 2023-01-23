@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 from packstats import PackageStatistics
 from packstats.utils import Config
 import argparse
