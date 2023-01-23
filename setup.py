@@ -17,10 +17,10 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires=">=3.6",
     entry_points={
-    'console_scripts': [
-        'packstats=packstats.package_statistics:run_cli',
-    ],
-},
+        "console_scripts": [
+            "packstats=packstats.package_statistics:run_cli",
+        ],
+    },
 )
