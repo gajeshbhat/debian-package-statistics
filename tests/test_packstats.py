@@ -70,11 +70,13 @@ class TestPackstats(unittest.TestCase):
         packstats = stats.PackageStatistics(
             self.arch, self.mirror_url, self.top_n, True
         )
+        packstats.print_top_packages()
         fresh_end = time.time()
         cached_start = time.time()
         packstats = stats.PackageStatistics(
             self.arch, self.mirror_url, self.top_n, False
         )
+        packstats.print_top_packages
         cached_end = time.time()
         self.assertLess(cached_end - cached_start, fresh_end - fresh_stat)
 
