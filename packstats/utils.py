@@ -27,7 +27,7 @@ class Logger:
     def setup_log_folder(self):
         config = Config.instance()
         if not os.path.exists(config["DEFAULT_LOG_DIR_PATH"]):
-            os.makedirs(config["DEFAULT_LOG_DIR_PATH"],exist_ok=True)
+            os.makedirs(config["DEFAULT_LOG_DIR_PATH"], exist_ok=True)
 
     def get_logger(self):
         return self.log
@@ -89,7 +89,7 @@ class Config(object):
             "DEFAULT_REFRESH": False,
             "DEFAULT_ARCH": "all",
             "DEFAULT_DATA_DIR_PATH": "./data/",
-            "DEFAULT_LOG_DIR_PATH": "./logs/"
+            "DEFAULT_LOG_DIR_PATH": "./logs/",
         }
 
 
