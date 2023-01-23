@@ -62,7 +62,7 @@ class PackageStatistics:
                 "An error occurred while trying to extract the mirror domain! Please enter a differnt URL "
             )
             self.logger.log_error(
-                f"An error occurred while trying to extract the mirror domain: {e}", 
+                f"An error occurred while trying to extract the mirror domain: {e}",
             )
             sys.exit(1)
 
@@ -163,7 +163,8 @@ class PackageStatistics:
         top_packages = self.sort_and_return_top_packages()
         self.logger.log_info(f"Top packages: {top_packages}")
         return top_packages
-        
+
+    # Print the top packages to the console
     def print_top_packages(self):
         top_packages = self.get_top_packages()
         print("Top packages by number of files:")
