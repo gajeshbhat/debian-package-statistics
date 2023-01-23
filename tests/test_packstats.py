@@ -1,10 +1,7 @@
-# Desc: test packstats module
+# Description: Unit tests for packstats module
 
 import unittest
-import os
-import shutil
 import time
-import tempfile
 import logging
 import logging.handlers
 from packstats import stats, utils
@@ -61,9 +58,26 @@ class TestPackstats(unittest.TestCase):
         self.log.info("Testing get_top_packages method with refresh and invalid mirror url")
         with self.assertRaises(SystemExit):
             stats.PackageStatistics(
-                self.arch, "http://invalid_mirror_url", self.top_n, True
+                self.arch, "http://invalid_mirror_url", self.top_n, False
             )
 
+    def test_get_top_packages_with_refresh_and_invalid_arch(self):
+        self.log.info("Testing get_top_packages method with refresh and invalid arch")
+        with self.assertRaises(SystemExit):
+            stats.PackageStatistics(
+                "invalid_arch", self.mirror_url, self.top_n, False
+            )
+    
+    def test_get_top_packages_with_refresh_and_invalid_top_n(self):
+        self.log.info("Testing get_top_packages method with refresh and invalid top_n")
+        with self.assertRaises(SystemExit):
+            stats.PackageStatistics(
+                self.arch, self.mirror_url, -1, False
+            )
+        with self.assertRaises(SystemExit):
+            stats.PackageStatistics(
+                self.arch, self.mirror_url, 0, False
+            )
     def test_time_improvment_after_refresh(self):
         self.log.info("Testing time improvment after refresh")
         fresh_stat = time.time()

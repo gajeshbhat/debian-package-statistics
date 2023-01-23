@@ -70,8 +70,7 @@ class PackageStatistics:
         if self.top_packs_count < 1:
             print("The number of packages to be shown should be greater than 0")
             self.logger.log_error(
-                "The number of packages to be shown should be greater than 0. User input: ",
-                self.top_packs_count,
+                f"The number of packages to be shown should be greater than 0. User input: {self.top_packs_count,}",
             )
             sys.exit(1)
 

@@ -72,7 +72,6 @@ class Config(object):
                 config = json.load(f)
             return config
         except Exception as e:
-            print("An error occurred while trying to load the configuration file! ", e)
             print(
                 "Using default configuration values instead and saving them in a ./config/packstat_defaults.json file."
             )
