@@ -18,5 +18,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Install the package_statistics application in the current virtualenv
+pip install -e .
+
+# Make the package_statistics.py file executable
 chmod +x package_statistics.py
 ./package_statistics.py --help
