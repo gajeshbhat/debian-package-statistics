@@ -22,7 +22,7 @@ class Logger:
             logging.Formatter("%(asctime)s %(levelname)s %(message)s")
         )
         self.log.addHandler(self.loghandler)
-        self.log.info("\n")  # Two space between each run
+        self.log.info("\n")  # space between each run
 
     def setup_log_folder(self):
         config = Config.instance()
@@ -89,7 +89,7 @@ class Config(object):
             "DEFAULT_REFRESH": False,
             "DEFAULT_ARCH": "all",
             "DEFAULT_DATA_DIR_PATH": "./data/",
-            "DEFAULT_LOG_DIR_PATH": "./logs/",
+            "DEFAULT_LOG_DIR_PATH": "./logs/"
         }
 
 
